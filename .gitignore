@@ -1,0 +1,15 @@
+# Python
+_pycache_/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.vscode/
+
+# Specific to this project
+# Model files (often regenerated)
+*.pkl # Scikit-learn models/pickles

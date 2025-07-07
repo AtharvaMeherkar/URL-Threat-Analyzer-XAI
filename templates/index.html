@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL Threat Analyzer</title>
+    <!-- Google Fonts: Poppins for headings, Inter for body text -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <style>
+      /* General Styling & Variables */
+      :root {
+        --primary-color: #3498db; /* Blue */
+        --secondary-color: #2ecc71; /* Green */
+        --accent-color: #f1c40f; /* Yellow */
+        --malicious-color: #e74c3c; /* Red */
+        --benign-color: #2ecc71; /* Green */
+        --dark-bg: #2c3e50; /* Dark Blue Gray */
+        --card-bg: #34495e; /* Medium Blue Gray */
+        --text-color: #ecf0f1;
+        --heading-color: #ffffff;
+        --border-radius-sm: 8px;
+        --border-radius-md: 12px;
+        --border-radius-lg: 16px;
+        --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.2);
+        --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.4);
+      }
+
+      /* CSS Reset */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        line-height: 1.6;
+        color: var(--text-color);
+        background-color: var(--dark-bg);
+        min-height: 100vh;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        background-color: #1a2a3a;
+        padding: 20px 30px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1000;
+      }
+      .header-title {
+        font-family: "Poppins", sans-serif;
+        font-size: 2em;
+        font-weight: 800;
+        color: var(--heading-color);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .header-title i {
+        color: var(--secondary-color);
+      }
+      .logout-btn {
+        background-color: var(--malicious-color);
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: var(--border-radius-sm);
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .logout-btn:hover {
+        background-color: #c0392b;
+      }
+
+      .main-content {
+        flex-grow: 1;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .card {
+        background-color: var(--card-bg);
+        padding: 30px;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        width: 100%;
+        max-width: 800px; /* Wider card */
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .card-title {
+        font-family: "Poppins", sans-serif;
+        font-size: 1.8em;
+        font-weight: 700;
+        color: var(--heading-color);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      .card-title i {
+        color: var(--primary-color);
+      }
+
+      .url-input-group {
+        width: 100%;
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .url-input {
+        flex-grow: 1;
+        padding: 12px 15px;
+        border: 1px solid #555;
+        border-radius: var(--border-radius-sm);
+        background-color: #444;
+        color: var(--text-color);
+        font-size: 1.1em;
+        font-family: "Inter", sans-serif;
+      }
+      .url-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+      }
+      .analyze-btn {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: var(--border-radius-sm);
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .analyze-btn:hover {
+        background-color: #2980b9;
+        transform: translateY(-2px);
+      }
+      .analyze-btn:disabled {
+        background-color: #555;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .message-box {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: var(--border-radius-sm);
+        font-weight: 600;
+        display: none;
+        text-align: center;
+        border: 1px solid;
+        width: 100%;
+        max-width: 800px;
+      }
+      .loading-message {
+        background-color: rgba(241, 196, 15, 0.1);
+        color: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+      .error-message {
+        background-color: rgba(231, 76, 60, 0.1);
+        color: var(--malicious-color);
+        border-color: var(--malicious-color);
+      }
+
+      .result-card {
+        background-color: var(--card-bg);
+        padding: 30px;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-md);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        width: 100%;
+        max-width: 800px;
+        text-align: left;
+        margin-top: 30px;
+        display: none;
+        animation: fadeIn 0.5s ease-out forwards;
+      }
+      .result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .result-header h3 {
+        font-size: 1.8em;
+        margin-bottom: 0;
+        color: var(--heading-color);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .result-header .prediction-label {
+        font-size: 1.5em;
+        font-weight: 700;
+      }
+      .prediction-label.malicious {
+        color: var(--malicious-color);
+      }
+      .prediction-label.benign {
+        color: var(--benign-color);
+      }
+
+      .confidence-bar-container {
+        width: 100%;
+        height: 25px; /* Taller bar */
+        background-color: #555;
+        border-radius: 12px; /* More rounded */
+        overflow: hidden;
+        margin-top: 10px;
+        margin-bottom: 25px;
+      }
+      .confidence-bar {
+        height: 100%;
+        background-color: var(--primary-color);
+        border-radius: 12px;
+        transition: width 1s ease-out;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1em;
+      }
+
+      .features-section {
+        margin-bottom: 30px;
+      }
+      .features-section h4 {
+        font-size: 1.2em;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        text-align: center;
+      }
+      .features-list {
+        list-style: none;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fit,
+          minmax(200px, 1fr)
+        ); /* Larger columns */
+        gap: 15px;
+      }
+      .features-list li {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 8px 12px;
+        border-radius: 5px;
+        font-size: 0.95em;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .features-list li .value {
+        font-weight: 600;
+        color: var(--secondary-color);
+      }
+
+      .explainability-section {
+        margin-top: 20px;
+      }
+      .explainability-section h4 {
+        font-size: 1.2em;
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        text-align: center;
+      }
+      #featureImportanceChart {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 15px;
+        height: 300px; /* Fixed height for chart */
+        width: 100%;
+      }
+      .no-explanation-message {
+        font-style: italic;
+        color: #bdc3c7;
+        font-size: 0.9em;
+        text-align: center;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .fa-spin {
+        animation: spin 1s linear infinite;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .header {
+          padding: 15px 20px;
+          flex-direction: column;
+          gap: 15px;
+        }
+        .header-title {
+          font-size: 1.6em;
+        }
+        .main-content {
+          padding: 20px;
+        }
+        .card {
+          padding: 20px;
+        }
+        .card-title {
+          font-size: 1.5em;
+        }
+        .url-input-group {
+          flex-direction: column;
+          gap: 15px;
+        }
+        .analyze-btn {
+          width: 100%;
+          max-width: none;
+        }
+        .result-card {
+          padding: 20px;
+        }
+        .result-header h3 {
+          font-size: 1.4em;
+        }
+        .result-header .prediction-label {
+          font-size: 1.2em;
+        }
+        .features-list {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .header-title {
+          font-size: 1.3em;
+        }
+        .card {
+          padding: 15px;
+        }
+        .card-title {
+          font-size: 1.2em;
+        }
+        .url-input-group {
+          gap: 10px;
+        }
+        .url-input,
+        .analyze-btn {
+          font-size: 0.9em;
+          padding: 10px 15px;
+        }
+        .result-card {
+          padding: 15px;
+        }
+        .result-header h3 {
+          font-size: 1.2em;
+        }
+        .result-header .prediction-label {
+          font-size: 1em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay hidden" id="loadingOverlay">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Analyzing URL...</p>
+    </div>
+
+    <div class="header">
+      <div class="header-title">
+        <i class="fas fa-link"></i>
+        URL Threat Analyzer
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn"
+        >Logout <i class="fas fa-sign-out-alt"></i
+      ></a>
+    </div>
+
+    <div class="main-content">
+      <div class="card analyze-input-card">
+        <h2 class="card-title">
+          <i class="fas fa-magnifying-glass"></i> Analyze URL
+        </h2>
+        <div class="url-input-group">
+          <input
+            type="text"
+            id="urlInput"
+            class="url-input"
+            placeholder="Enter URL to analyze (e.g., https://www.example.com)"
+          />
+          <button id="analyzeButton" class="analyze-btn">
+            Analyze <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+        <p id="loadingMessage" class="message-box loading-message">
+          <i class="fas fa-spinner fa-spin"></i> Analyzing URL...
+        </p>
+        <p id="errorMessage" class="message-box error-message">
+          <i class="fas fa-exclamation-circle"></i> An error occurred.
+        </p>
+      </div>
+
+      <div class="result-card" id="resultCard">
+        <div class="result-header">
+          <h3><i class="fas fa-flask"></i> Analysis Result</h3>
+          <span class="prediction-label" id="predictionLabel"></span>
+        </div>
+        <div class="confidence-bar-container">
+          <div class="confidence-bar" id="confidenceBar"></div>
+        </div>
+
+        <div class="features-section">
+          <h4><i class="fas fa-info-circle"></i> Extracted Features</h4>
+          <ul class="features-list" id="featuresList">
+            <!-- Features will be loaded here -->
+          </ul>
+        </div>
+
+        <div class="explainability-section">
+          <h4>
+            <i class="fas fa-lightbulb"></i> Feature Importance (Why this
+            prediction?)
+          </h4>
+          <canvas id="featureImportanceChart"></canvas>
+          <p
+            class="no-explanation-message"
+            id="noExplanationMessage"
+            style="display: none"
+          >
+            No significant contributing features for this classification or it
+            is benign.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      const loadingOverlay = document.getElementById("loadingOverlay");
+      const urlInput = document.getElementById("urlInput");
+      const analyzeButton = document.getElementById("analyzeButton");
+      const loadingMessage = document.getElementById("loadingMessage");
+      const errorMessage = document.getElementById("errorMessage");
+      const resultCard = document.getElementById("resultCard");
+      const predictionLabel = document.getElementById("predictionLabel");
+      const confidenceBar = document.getElementById("confidenceBar");
+      const featuresList = document.getElementById("featuresList");
+      const featureImportanceChartCanvas = document.getElementById(
+        "featureImportanceChart"
+      );
+      const noExplanationMessage = document.getElementById(
+        "noExplanationMessage"
+      );
+
+      let featureImportanceChartInstance = null; // To manage Chart.js instance
+
+      // Helper to show/hide messages
+      function showMessage(element, text = "", type = "") {
+        loadingMessage.style.display = "none";
+        errorMessage.style.display = "none";
+
+        if (type === "loading") {
+          element.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
+          element.style.display = "block";
+        } else if (type === "error") {
+          element.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${text}`;
+          element.style.display = "block";
+        } else {
+          element.style.display = "none";
+        }
+      }
+
+      // Function to update the feature importance chart
+      function updateFeatureImportanceChart(chartData) {
+        if (featureImportanceChartInstance) {
+          featureImportanceChartInstance.destroy();
+        }
+
+        if (!chartData || chartData.length === 0) {
+          noExplanationMessage.style.display = "block";
+          featureImportanceChartCanvas.style.display = "none";
+          return;
+        } else {
+          noExplanationMessage.style.display = "none";
+          featureImportanceChartCanvas.style.display = "block";
+        }
+
+        const labels = chartData.map((d) =>
+          d.feature.replace(/has_keyword_/g, "").replace(/tld_/g, "TLD:")
+        );
+        const data = chartData.map((d) => d.importance);
+        const backgroundColors = data.map((val) =>
+          val > 0 ? "rgba(231, 76, 60, 0.8)" : "rgba(46, 204, 113, 0.8)"
+        ); // Red for positive coef (malicious), Green for negative (benign)
+
+        featureImportanceChartInstance = new Chart(
+          featureImportanceChartCanvas,
+          {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Feature Importance (Coefficient)",
+                  data: data,
+                  backgroundColor: backgroundColors,
+                  borderColor: backgroundColors.map((color) =>
+                    color.replace("0.8", "1")
+                  ),
+                  borderWidth: 1,
+                  borderRadius: 5,
+                },
+              ],
+            },
+            options: {
+              indexAxis: "y", // Horizontal bar chart
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                title: { display: false }, // Title handled by H4
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      return `${
+                        context.dataset.label
+                      }: ${context.parsed.x.toFixed(4)}`;
+                    },
+                  },
+                },
+              },
+              scales: {
+                x: {
+                  ticks: { color: "white" },
+                  grid: { color: "rgba(255,255,255,0.1)" },
+                  title: {
+                    display: true,
+                    text: "Coefficient Value",
+                    color: "white",
+                  },
+                },
+                y: {
+                  ticks: { color: "white" },
+                  grid: { display: false },
+                },
+              },
+            },
+          }
+        );
+      }
+
+      // Handle analyze button click
+      analyzeButton.addEventListener("click", async () => {
+        const url = urlInput.value.trim();
+        if (!url) {
+          showMessage(errorMessage, "Please enter a URL to analyze.", "error");
+          return;
+        }
+
+        showMessage(loadingMessage, "Analyzing URL...", "loading");
+        analyzeButton.disabled = true;
+        resultCard.style.display = "none";
+
+        try {
+          const response = await fetch("/api/analyze_url", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: url }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            predictionLabel.textContent = data.prediction;
+            predictionLabel.className = `prediction-label ${
+              data.prediction === "Potentially Malicious"
+                ? "malicious"
+                : "benign"
+            }`;
+
+            // Animate confidence bar
+            confidenceBar.style.width = "0%"; // Reset for animation
+            confidenceBar.textContent = `0%`;
+            setTimeout(() => {
+              confidenceBar.style.width = `${data.confidence}%`;
+              confidenceBar.textContent = `${data.confidence}%`;
+              confidenceBar.style.backgroundColor =
+                data.prediction === "Potentially Malicious"
+                  ? "var(--malicious-color)"
+                  : "var(--benign-color)";
+            }, 100); // Small delay for animation trigger
+
+            // Populate extracted features
+            featuresList.innerHTML = "";
+            const featuresToDisplay = {
+              "URL Length": data.extracted_features.url_length,
+              "Domain Length": data.extracted_features.domain_length,
+              "Path Length": data.extracted_features.path_length,
+              "Query Length": data.extracted_features.query_length,
+              "Fragment Length": data.extracted_features.fragment_length,
+              "Dots in Domain": data.extracted_features.num_dots_in_domain,
+              "Hyphens in Domain":
+                data.extracted_features.num_hyphens_in_domain,
+              "Digits in Domain": data.extracted_features.num_digits_in_domain,
+              "IP in Domain": data.extracted_features.has_ip_in_domain
+                ? "Yes"
+                : "No",
+              HTTPS: data.extracted_features.is_https ? "Yes" : "No",
+              "Shortened URL": data.extracted_features.is_shortened
+                ? "Yes"
+                : "No",
+              Subdomains: data.extracted_features.num_subdomains,
+              Entropy: data.extracted_features.entropy.toFixed(2),
+              TLD: data.extracted_features.tld,
+            };
+            for (const key in featuresToDisplay) {
+              const listItem = document.createElement("li");
+              listItem.innerHTML = `<span>${key}:</span> <span class="value">${featuresToDisplay[key]}</span>`;
+              featuresList.appendChild(listItem);
+            }
+
+            // Update feature importance chart
+            updateFeatureImportanceChart(data.feature_importance_graph_data);
+
+            resultCard.style.display = "block";
+          } else {
+            showMessage(
+              errorMessage,
+              data.error || "An unknown error occurred during analysis.",
+              "error"
+            );
+          }
+        } catch (error) {
+          console.error("Fetch error:", error);
+          showMessage(
+            errorMessage,
+            "Could not connect to the server. Please ensure the backend is running.",
+            "error"
+          );
+        } finally {
+          showMessage(loadingMessage); // Hide loading
+          analyzeButton.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
